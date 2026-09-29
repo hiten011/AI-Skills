@@ -63,7 +63,7 @@ The order is: the connectors already in this chat, then Composio, then connect t
    ```
    It runs every source in parallel (about 150 s budget), normalizes everything to one schema, uploads the result and prints `RESULT_JSON {...}`.
 3. If `pending` is not empty, wait about 30 s and rerun the cached copy, which is cheaper:
-   `CONFIG = <same config + "collect_only": True>` followed by `exec(open('/mnt/files/jobhunt/fetch_jobs.py').read())`. Keep the same `run_id`. Slow sources keep running in the background and write their own files. Use `"only": [...]` the same way to retry one source.
+   `CONFIG = <same config + "collect_only": True>` followed by `exec(open('/mnt/files/jobhunt/fetch_jobs.py').read())`. Keep the same `run_id`. Slow sources keep running in the background and write their own files. Use `"only": [...]` the same way to retry one source. If that `open()` fails with FileNotFoundError, the workbench sandbox restarted and wiped `/mnt/files`. Re-send the full cell from step 2 (with `collect_only` removed).
 4. Download it locally: `curl -sSL -o jobs_<run_id>.json "<download_url>"`.
 5. If a source errored, read the error in `RESULT_JSON.errors` and try the fix in `references/sources.md` → Troubleshooting once. Don't loop.
 

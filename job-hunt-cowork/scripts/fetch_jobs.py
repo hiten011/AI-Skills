@@ -161,6 +161,8 @@ def rec(source, query="", **kw):
     r.update({k: v for k, v in kw.items() if v not in (None, "")})
     r["title"] = strip_html(r["title"], 200)
     r["company"] = strip_html(r["company"], 120)
+    if r["salary_text"] and not re.search(r"\d", str(r["salary_text"])):
+        r["salary_text"] = ""  # boards sometimes put "Full time" / "Not specified" in the pay slot
     if not r["salary_min"] and r["salary_text"]:
         a, b, p = parse_salary(r["salary_text"])
         r["salary_min"], r["salary_max"] = a, b

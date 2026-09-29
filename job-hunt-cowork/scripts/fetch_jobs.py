@@ -45,7 +45,7 @@ CITIES = C.get("cities") or []
 MODES = [m.lower() for m in (C.get("work_modes") or ["remote", "hybrid", "onsite"])]
 DAYS = int(C.get("posted_within_days") or 14)
 MAXN = int(C.get("max_per_source") or 50)
-BUDGET_S = int(C.get("time_budget_s") or 150)
+BUDGET_S = int(C.get("time_budget_s") or 120)
 ENABLED = C.get("sources") or "auto"
 TARGET_COS = C.get("target_companies") or []
 TECH = C.get("is_tech_role", True)
@@ -256,7 +256,9 @@ def src_linkedin():
                 log.append({"source": "LinkedIn (Apify valig)", "query": q, "status": "ok", "count": len(its)})
             except Exception as ex:
                 log.append({"source": "LinkedIn (Apify valig)", "query": q, "status": "error", "count": 0, "error": str(ex)[:300]})
-    if not recs:  # fallback: Composio's typed LinkedIn actor (needs one-time approval in Apify console)
+    if not recs:  # free fallback: LinkedIn's public (logged-out) job search pages
+        recs += _linkedin_guest(locs, log)
+    if not recs:  # last fallback: Composio's typed LinkedIn actor (needs one-time approval in Apify console)
         try:
             r = call("APIFY_SEARCH_LINKEDIN_JOBS", {"jobTitles": ROLES[:4], "locations": (CITIES[:2] or [COUNTRY]),
                                                     "maxItems": MAXN, "sortBy": "date",
@@ -267,6 +269,43 @@ def src_linkedin():
         except Exception as ex:
             log.append({"source": "LinkedIn (Apify typed)", "query": "", "status": "error", "count": 0, "error": str(ex)[:300]})
     return recs, log
+
+
+def _linkedin_guest(locs, log):
+    """LinkedIn's public jobs-guest endpoint (no login, no Apify). ~25 cards per page; be polite."""
+    out = []
+    tpr = "r86400" if DAYS <= 1 else "r604800" if DAYS <= 7 else "r2592000"
+    for role in ROLES[:3]:
+        for loc in locs[:2]:
+            loc_q = COUNTRY if loc == "Remote" else (loc if COUNTRY.lower() in loc.lower() else f"{loc}, {COUNTRY}")
+            q = f"{role} @ {loc_q} (guest)"
+            n = 0
+            try:
+                for start in range(0, min(MAXN, 75), 25):
+                    url = ("https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?"
+                           f"keywords={quote_plus(role)}&location={quote_plus(loc_q)}&f_TPR={tpr}&start={start}"
+                           + ("&f_WT=2" if loc == "Remote" else ""))
+                    h = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=25).text
+                    cards = re.findall(r'<li>(.*?)</li>', h, flags=re.S)
+                    if not cards:
+                        break
+                    for c in cards:
+                        link = re.search(r'href="(https://[^"]*linkedin\.com/jobs/view/[^"?]+)', c)
+                        title = re.search(r'base-search-card__title[^>]*>(.*?)<', c, re.S)
+                        comp = re.search(r'base-search-card__subtitle[^>]*>(.*?)</h4>', c, re.S)
+                        where = re.search(r'job-search-card__location[^>]*>(.*?)<', c, re.S)
+                        when = re.search(r'datetime="([\d-]+)"', c)
+                        if link and title:
+                            out.append(rec("LinkedIn", q, title=title.group(1), company=strip_html(comp.group(1) if comp else ""),
+                                           location=strip_html(where.group(1) if where else ""), url=link.group(1),
+                                           posted_date=when.group(1) if when else "",
+                                           work_mode="Remote" if loc == "Remote" else ""))
+                            n += 1
+                    time.sleep(1.0)
+                log.append({"source": "LinkedIn (public pages)", "query": q, "status": "ok", "count": n})
+            except Exception as ex:
+                log.append({"source": "LinkedIn (public pages)", "query": q, "status": "error", "count": n, "error": str(ex)[:200]})
+    return out
 
 
 INDEED_CC = {"ar", "au", "at", "bh", "be", "br", "ca", "cl", "cn", "co", "cr", "cz", "dk", "ec", "eg", "fi", "fr", "de", "gr", "hk", "hu", "in", "id", "ie", "il", "it", "jp", "kw", "lu", "my", "mx", "ma", "nl", "nz", "ng", "no", "om", "pk", "pa", "pe", "ph", "pl", "pt", "qa", "ro", "sa", "sg", "za", "kr", "es", "se", "ch", "tw", "th", "tr", "ua", "ae", "uk", "us", "uy", "ve", "vn"}
@@ -290,7 +329,11 @@ def src_indeed():
                     args["location"] = loc
                 if dp:
                     args["datePosted"] = dp
-                its = items_of(call("APIFY_SCRAPE_INDEED_JOBS", args))
+                try:
+                    its = items_of(call("APIFY_SCRAPE_INDEED_JOBS", args))
+                except Exception:  # typed tool sometimes fails validating its own output: run the same actor directly
+                    its = items_of(call("APIFY_RUN_ACTOR_SYNC_GET_DATASET_ITEMS", {
+                        "actorId": "valig/indeed-jobs-scraper", "input": args, "maxItems": MAXN, "timeout": 140}))
                 for it in its:
                     L = it.get("location") or {}
                     bs = it.get("baseSalary") or {}
@@ -544,7 +587,7 @@ def src_boards():
             if url not in seen:
                 seen.add(url)
                 tasks.append((name, url, role))
-    with ThreadPoolExecutor(max_workers=4) as pool:  # Firecrawl free plan allows a few concurrent scrapes
+    with ThreadPoolExecutor(max_workers=2) as pool:  # Firecrawl free plan rate-limits bursts; 2 is safe
         futs = {pool.submit(_board_one, *t): t for t in tasks}
         for f, (name, url, role) in futs.items():
             try:

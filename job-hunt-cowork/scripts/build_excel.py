@@ -209,12 +209,18 @@ def main():
                f"{'/'.join(L.get('work_modes', []))} · run {dt.date.today().isoformat()}")
     d["B3"].font = Font(name=FONT, size=10, color=MUTED)
 
+    def status_count(st):
+        # a job counts once whether its status was set in All Jobs (col U) or Top Matches (col P, matched by Key)
+        n, t = n_all + 1, max(2, n_top + 1)
+        return (f"=SUMPRODUCT(--((('All Jobs'!U2:U{n}=\"{st}\")+(COUNTIFS('Top Matches'!R2:R{t},'All Jobs'!Y2:Y{n},"
+                f"'Top Matches'!P2:P{t},\"{st}\")>0))>0))")
+
     kpis = [("Unique jobs found", f"=COUNTA('All Jobs'!C2:C{n_all + 1})"),
             ("New since last run", f"=COUNTIF('All Jobs'!Q2:Q{n_all + 1},\"New\")"),
-            (f"Top matches (fit >= {min_score})", f"=COUNTA('Top Matches'!D2:D{max(2, n_top + 1)})"),
+            (f"Top matches (reviewed, or fit >= {min_score})", f"=COUNTA('Top Matches'!D2:D{max(2, n_top + 1)})"),
             ("Strong (4.5+)", f"=COUNTIF('All Jobs'!A2:A{n_all + 1},\">=4.5\")"),
-            ("Applied", f"=COUNTIF('All Jobs'!U2:U{n_all + 1},\"Applied\")+COUNTIF('Top Matches'!P2:P{max(2, n_top + 1)},\"Applied\")"),
-            ("Interviews", f"=COUNTIF('All Jobs'!U2:U{n_all + 1},\"Interview\")+COUNTIF('Top Matches'!P2:P{max(2, n_top + 1)},\"Interview\")"),
+            ("Applied", status_count("Applied")),
+            ("Interviews", status_count("Interview")),
             ("Skipped (dealbreakers/filters)", f"=COUNTA(Skipped!A2:A{max(2, len(skipped) + 1)})")]
     r0 = 5
     for i, (lab, f) in enumerate(kpis):

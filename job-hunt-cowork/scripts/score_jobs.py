@@ -65,37 +65,46 @@ def annual_usd(v, cur, period):
 
 
 def load_previous(path):
-    """Read a previous job_hunt_*.xlsx so statuses/notes carry over and repeats are marked."""
+    """Read a previous job_hunt_*.xlsx: statuses/notes carry over, repeats get marked, and rows the
+    user is acting on (Applied, Interview, ...) are kept even if this search doesn't find them again."""
     prev = {}
     try:
         import openpyxl
-        wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+        wb = openpyxl.load_workbook(path, data_only=True)
         for sheet in ("All Jobs", "Top Matches", "Skipped"):
             if sheet not in wb.sheetnames:
                 continue
-            rows = list(wb[sheet].iter_rows(values_only=True))
-            if not rows:
-                continue
-            ix = {str(h or ""): i for i, h in enumerate(rows[0])}
+            ws = wb[sheet]
+            hdr = [str(c.value or "") for c in ws[1]]
+            ix = {h: i for i, h in enumerate(hdr)}
             if "Key" not in ix:
                 continue
-            for row in rows[1:]:
-                k = row[ix["Key"]]
+            for row in ws.iter_rows(min_row=2):
+                val = lambda h: row[ix[h]].value if h in ix else None
+                k = val("Key")
                 if not k:
                     continue
-                cur = prev.setdefault(k, {"status": "New", "notes": "", "first_seen": ""})
-                st = row[ix["Status"]] if "Status" in ix else None
+                cur = prev.setdefault(k, {"status": "New", "notes": "", "first_seen": "", "row": {}})
+                st = val("Status")
                 if st and st != "New":
                     cur["status"] = st
-                nt = row[ix["Notes"]] if "Notes" in ix else None
-                if nt:
-                    cur["notes"] = nt
-                fs = row[ix["First seen"]] if "First seen" in ix else None
-                if fs:
-                    cur["first_seen"] = fs
+                if val("Notes"):
+                    cur["notes"] = val("Notes")
+                if val("First seen"):
+                    cur["first_seen"] = val("First seen")
+                link = row[ix["Link"]].hyperlink.target if "Link" in ix and row[ix["Link"]].hyperlink else ""
+                data = {"title": val("Job title"), "company": val("Company"), "location": val("Location"),
+                        "work_mode": val("Mode"), "salary_text": val("Pay"), "posted_date": val("Posted"),
+                        "fit_score": val("Fit (1-5)"), "url": link}
+                for f, v in data.items():
+                    if v not in (None, "") and not cur["row"].get(f):
+                        cur["row"][f] = v
     except Exception as ex:
         print(f"[warn] could not read previous workbook: {ex}", file=sys.stderr)
     return prev
+
+
+KEEP_STATUSES = {"interested", "applied", "interview", "offer"}
 
 
 def score(r, P):
@@ -273,6 +282,21 @@ def main():
         if cu:
             url_to_key[cu] = k
 
+    # Postings with a blank company (some boards hide it) merge into a same-title, same-city posting that has one
+    named = {}
+    for k in by_key:
+        c, t, l = k.split("|", 2)
+        if c:
+            named.setdefault(f"{t}|{l}", []).append(k)
+    for k in [k for k in list(by_key) if k.startswith("|")]:
+        cands = named.get(k[1:], [])
+        if len(cands) == 1:
+            tgt, r = by_key[cands[0]], by_key.pop(k)
+            tgt["sources"] = ", ".join(sorted(set(tgt["sources"].split(", ")) | set(r["sources"].split(", "))))
+            for f, v in r.items():
+                if v and not tgt.get(f):
+                    tgt[f] = v
+
     prev = load_previous(a.previous) if a.previous else {}
     today = dt.date.today().isoformat()
     out = []
@@ -287,6 +311,21 @@ def main():
         else:
             r["is_new"], r["status"], r["notes"], r["first_seen"] = "New", "New", "", today
         out.append(r)
+
+    # Keep jobs the user is acting on, even if this search didn't surface them again
+    for k, p in prev.items():
+        if k in by_key or str(p.get("status", "")).lower() not in KEEP_STATUSES:
+            continue
+        d = p.get("row", {})
+        out.append({"key": k, "title": d.get("title") or k.split("|")[1], "company": d.get("company") or "",
+                    "location": d.get("location") or "", "work_mode": d.get("work_mode") or "",
+                    "salary_text": d.get("salary_text") or "", "posted_date": str(d.get("posted_date") or "")[:10],
+                    "url": d.get("url") or "", "sources": "Previous tracker", "source": "Previous tracker",
+                    "fit_score": float(d.get("fit_score") or 3.0), "prescore": 0,
+                    "verdict": "Tracking (not in this search)", "legitimacy": "", "matched_skills": "",
+                    "flags": "not found in this search; may be closed", "skip_reason": "", "age_days": None,
+                    "score_breakdown": "", "reviewed": False, "is_new": "Carried over", "status": p["status"],
+                    "notes": p.get("notes") or "", "first_seen": str(p.get("first_seen") or "")[:10], "description": ""})
 
     # Posting-age filter from the profile (undated postings pass: career-ops rule)
     max_age = P.get("search", {}).get("posted_within_days")

@@ -59,11 +59,13 @@ The order is: the connectors already in this chat, then Composio, then connect t
    SRC = r'''<full text of fetch_jobs.py>'''
    import os; os.makedirs('/mnt/files/jobhunt', exist_ok=True)
    open('/mnt/files/jobhunt/fetch_jobs.py', 'w').write(SRC)
-   exec(SRC)
+   exec(SRC, {"CONFIG": CONFIG, "run_composio_tool": run_composio_tool,
+              "upload_local_file": upload_local_file, "__name__": "__main__"})
    ```
-   It runs every source in parallel (about 150 s budget), normalizes everything to one schema, uploads the result and prints `RESULT_JSON {...}`.
+   Always pass a fresh globals dict as shown. The workbench kernel can be shared with other runs, and a bare `exec` would let two searches overwrite each other's `CONFIG` mid-run.
+   It runs every source in parallel (about a 120 s budget, under the workbench's 180 s cell limit), normalizes everything to one schema, uploads the result and prints `RESULT_JSON {...}`.
 3. If `pending` is not empty, wait about 30 s and rerun the cached copy, which is cheaper:
-   `CONFIG = <same config + "collect_only": True>` followed by `exec(open('/mnt/files/jobhunt/fetch_jobs.py').read())`. Keep the same `run_id`. Slow sources keep running in the background and write their own files. Use `"only": [...]` the same way to retry one source. If that `open()` fails with FileNotFoundError, the workbench sandbox restarted and wiped `/mnt/files`. Re-send the full cell from step 2 (with `collect_only` removed).
+   `CONFIG = <same config + "collect_only": True>` followed by `exec(open('/mnt/files/jobhunt/fetch_jobs.py').read(), {...same fresh globals...})`. Keep the same `run_id`. Slow sources keep running in the background and write their own files. Use `"only": [...]` the same way to retry one source. If that `open()` fails with FileNotFoundError, the workbench sandbox restarted and wiped `/mnt/files`. Re-send the full cell from step 2 (with `collect_only` removed).
 4. Download it locally: `curl -sSL -o jobs_<run_id>.json "<download_url>"`.
 5. If a source errored, read the error in `RESULT_JSON.errors` and try the fix in `references/sources.md` → Troubleshooting once. Don't loop.
 
@@ -74,7 +76,7 @@ python SKILL_DIR/scripts/score_jobs.py --profile profile.json --jobs jobs_<run_i
   --out scored.json --shortlist 40 [--previous <attached job_hunt_*.xlsx>]
 ```
 
-This dedupes across sources and scores title fit, skills, location, pay and recency, giving 0–100 mapped to 1–5. It applies dealbreakers, sponsorship and clearance checks, and ghost-job flags. It prints a compact shortlist; read that, not the whole JSON.
+This dedupes across sources and scores title fit, skills, location, pay and recency, giving 0–100 mapped to 1–5. With `--previous`, it also keeps any job the user marked Interested, Applied, Interview or Offer, even if this search didn't find it again, so the tracker never silently loses an application. It applies dealbreakers, sponsorship and clearance checks, and ghost-job flags. It prints a compact shortlist; read that, not the whole JSON.
 
 ### 5. Review the shortlist (your judgment, career-ops rubric)
 

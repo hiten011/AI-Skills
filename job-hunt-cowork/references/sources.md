@@ -8,8 +8,9 @@ rediscover it with `COMPOSIO_SEARCH_TOOLS` (use `search_strategy: "tool_search"`
 | key | Where jobs come from | Composio toolkit / tool | Cost | Auto-enabled when |
 |-----|----------------------|-------------------------|------|-------------------|
 | `linkedin` | LinkedIn public job search | apify → `APIFY_RUN_ACTOR_SYNC_GET_DATASET_ITEMS` with actor `valig/linkedin-jobs-scraper` (input: `keywords`, `location`, `datePosted` r86400/r604800/r2592000, `limit`, `titleExclude`) | ~$0.40 per 1k jobs | always |
-| ↳ fallback | LinkedIn (richer filters) | `APIFY_SEARCH_LINKEDIN_JOBS` | $0.001/job | only if valig fails. **Needs a one-time approval** in the Apify console (the error message contains the approval URL; show it to the user) |
-| `indeed` | Indeed (60 countries) | `APIFY_SCRAPE_INDEED_JOBS` (`title`, `country`, `location`, `datePosted` 1/3/7/14, `limit` ≤1000) | ~$0.10 per 1k | always (skipped if the country is unsupported) |
+| ↳ fallback 1 | LinkedIn public (logged-out) job pages | `requests` to `linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search` (25 cards/page, 1 s between pages) | free | only if valig fails |
+| ↳ fallback 2 | LinkedIn (richer filters) | `APIFY_SEARCH_LINKEDIN_JOBS` | $0.001/job | only if valig fails. **Needs a one-time approval** in the Apify console (the error message contains the approval URL; show it to the user) |
+| `indeed` | Indeed (60 countries) | `APIFY_SCRAPE_INDEED_JOBS` (`title`, `country`, `location`, `datePosted` 1/3/7/14, `limit` ≤1000). If the typed tool fails validating its own output, the script reruns actor `valig/indeed-jobs-scraper` through `APIFY_RUN_ACTOR_SYNC_GET_DATASET_ITEMS` | ~$0.10 per 1k | always (skipped if the country is unsupported) |
 | `boards` | Local boards, via Firecrawl JSON extraction of search pages: **Seek** + **Jora** (AU/NZ), **Reed** + Jora (UK), **Naukri** + Foundit (IN), **Built In** (US), **Job Bank** (CA), **MyCareersFuture** (SG), **StepStone** (DE/AT/CH), **We Work Remotely** (remote) + `extra_board_urls` | firecrawl → `FIRECRAWL_SCRAPE` with `formats:["json"]` | ~5 credits/page (free plan: 1,000/mo) | always |
 | `web` | Postings on Lever/Greenhouse/Ashby found by web search (discovers companies not on boards). Marked **unverified** | composio_search → `COMPOSIO_SEARCH_WEB` (Exa) | free | always |
 | `ats_search` | Greenhouse + Lever + Ashby cross-search | `APIFY_SEARCH_JOBS_ACROSS_SITES` (agentx/all-jobs-scraper) | ~$0.35 per 100 | always (often 0 results outside the US/UK) |
@@ -47,7 +48,7 @@ CONFIG = {
   "extra_board_urls": profile["search"].get("extra_board_urls", []),  # "{q}"/"{role}" placeholders
   "is_tech_role": True,          # False for non-tech searches (disables Dice)
   "sources": "auto",             # or an explicit list of keys from the table above
-  "time_budget_s": 150,          # the workbench kills cells at 180 s
+  "time_budget_s": 120,          # the workbench kills cells at 180 s; leave room for upload
   # "only": ["linkedin"],        # rerun just some sources
   # "collect_only": True,        # just merge what finished, then upload
 }
@@ -72,7 +73,8 @@ If the upload failed, rerun with `collect_only`. As a last resort, print the rec
 | Apify `402`/usage limit | The free credit is spent. Drop `linkedin`/`indeed`/`ats_search` and tell the user. The free sources still run. |
 | valig returns 0 for a city | Retry with `location` = country name, or `"<city>, <state>, <country>"`. |
 | Seek returns 0 / wrong page | Check `region_code`. Seek URLs look like `/software-engineer-jobs/in-All-Adelaide-SA?daterange=14`. |
-| Firecrawl `429`/timeout | Rerun `only:["boards"]` once. Otherwise skip. |
+| Firecrawl `429`/timeout | The script runs 2 scrapes at a time. If several searches share the account, rerun `only:["boards"]` once. Otherwise skip. |
+| LinkedIn rows about the wrong role/city | Another run shared the workbench kernel. Rerun with a fresh globals dict for `exec` (see SKILL.md step 3). |
 | Firecrawl JSON empty on a JS site | Use `browserbase_fetch.py` on that URL, then parse the text yourself. |
 | Exa `429` | The script already sleeps 0.6 s between queries. Rerun `only:["web"]` later. |
 | ZipRecruiter "Connection closed" | Known flakiness. Ignore. |

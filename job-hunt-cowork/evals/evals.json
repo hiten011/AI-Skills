@@ -1,0 +1,27 @@
+{
+  "skill_name": "job-hunt-cowork",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "here's my CV, find me data analyst jobs in Melbourne. hybrid is fine, I want at least 85k. put it all in a spreadsheet",
+      "expected_output": "An Excel tracker of Melbourne data-analyst roles from multiple sources, scored against the CV, with links, pay and why-it-fits, filtered for 85k+ and hybrid/onsite Melbourne.",
+      "files": [
+        "evals/files/priya_nair_cv.md"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "run my job search again",
+      "expected_output": "Profile restored from the attached previous tracker (no onboarding questions), fresh multi-source search, new Excel with previous 'Applied' status carried over and new jobs marked.",
+      "files": [
+        "evals/files/job_hunt_2026-09-22.xlsx"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I'm a senior product designer in London, find me remote or hybrid UX/product design roles, senior or lead level only, excel please",
+      "expected_output": "Excel of senior/lead UX & product design roles in London or remote-UK, from UK boards + LinkedIn etc, junior roles excluded, scored with links.",
+      "files": []
+    }
+  ]
+}

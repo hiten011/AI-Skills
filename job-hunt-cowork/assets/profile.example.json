@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "updated": "2026-09-29",
+  "candidate": {
+    "name": "Alex Sample",
+    "email": "",
+    "headline": "Graduate software engineer, Python + React, AI side projects",
+    "linkedin": "",
+    "portfolio": "",
+    "years_experience": 1,
+    "work_rights": ["Australia"],
+    "needs_sponsorship": false,
+    "has_clearance": false
+  },
+  "cv_summary": "BSc Computer Science (2025). 1 year as junior developer building internal tools in Python/Django and React. Side projects: RAG chatbot with LangChain, AWS Lambda data pipeline.",
+  "skills": {
+    "core": ["python", "javascript", "typescript", "react", "sql", "aws", "git", "rest api"],
+    "secondary": ["django", "node", "docker", "llm", "langchain", "pandas", "ci/cd"]
+  },
+  "experience": [
+    {"title": "Junior Developer", "company": "Example Co", "years": "2025-2026", "highlights": "Built 3 internal tools used by 40 staff"}
+  ],
+  "education": ["BSc Computer Science, University of Adelaide, 2025"],
+  "targets": {
+    "roles": ["Software Engineer", "Graduate Software Engineer", "AI Engineer"],
+    "title_keywords_positive": ["software", "developer", "engineer", "ai", "machine learning", "full stack", "backend", "frontend"],
+    "title_keywords_negative": ["senior", "staff", "principal", "lead", "manager", "head of", "director", "sales", "mechanical", "civil", "electrical"],
+    "seniority": ["entry", "junior", "graduate"],
+    "employment_types": ["full-time", "contract"],
+    "industries": [],
+    "company_stage": "any",
+    "target_companies": [
+      {"name": "Canva", "ats": "", "slug": ""}
+    ]
+  },
+  "location": {
+    "country": "Australia",
+    "country_code": "au",
+    "region_code": "SA",
+    "cities": ["Adelaide"],
+    "work_modes": ["remote", "hybrid", "onsite"],
+    "open_to_relocation": false,
+    "timezone": "Australia/Adelaide"
+  },
+  "compensation": {"currency": "AUD", "minimum": 70000, "target": 90000, "period": "year"},
+  "dealbreakers": ["security clearance", "commission only"],
+  "culture": {"require": [], "avoid": []},
+  "search": {
+    "posted_within_days": 14,
+    "max_per_source": 50,
+    "min_score": 3.5,
+    "sources": "auto",
+    "budget": "full",
+    "extra_board_urls": []
+  }
+}

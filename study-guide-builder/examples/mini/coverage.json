@@ -1,0 +1,8 @@
+[
+  {"source": "7.1 Direct-address tables", "where": ["t1"], "depth": "full"},
+  {"source": "7.2 Hash functions (division method)", "where": ["t1"], "depth": "full"},
+  {"source": "7.3 Collision resolution: separate chaining", "where": ["t2"], "depth": "full"},
+  {"source": "7.4 Open addressing: linear probing", "where": ["t2"], "depth": "full"},
+  {"source": "7.5 Load factor and resizing", "where": ["t2"], "depth": "full"},
+  {"source": "7.6 Universal hashing (proof)", "where": [], "depth": "skipped", "note": "Marked “not examinable” in the lecture notes; add a topic if your course tests it."}
+]

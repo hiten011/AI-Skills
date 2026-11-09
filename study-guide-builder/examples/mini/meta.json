@@ -1,0 +1,8 @@
+{
+  "title": "Hash Tables: Fast Lookup by Key",
+  "subtitle": "Mini example guide built from one lecture's notes",
+  "level": "Undergraduate · Data Structures",
+  "source": "Lecture 7 notes",
+  "accent": "#4f46e5",
+  "intro": "<p><b>The big picture.</b> A hash table answers “is this key here, and what goes with it?” in roughly constant time, no matter how many items you store. Topic 1 shows the trick (turn a key into an array index). Topic 2 shows what happens when two keys want the same slot, and how to keep the table fast as it fills.</p>"
+}

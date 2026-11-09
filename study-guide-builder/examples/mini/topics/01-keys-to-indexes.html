@@ -1,0 +1,90 @@
+<div class="callout idea">
+  <span class="label">Big idea</span>
+  <p>Arrays are fast at one thing: “give me element <em>i</em>” takes the same tiny time for any <em>i</em>. A hash table turns <em>every lookup into that operation</em> by computing, from the key alone, which index to look at.</p>
+</div>
+
+<h3>The problem: finding things</h3>
+<p>Suppose you store student records in an unsorted list. To find ID 48213 you scan from the start until you hit it, so the work grows with the number of records <em>n</em>. We write that as <strong>O(n)</strong>. Sorting helps (binary search is O(log n)), but can we do better, with no searching at all?</p>
+
+<div class="predict">
+  <div class="q">Student IDs are numbers up to 1,000,000,000 and 5,000 students are enrolled. Could you just use the ID as the array index? What would go wrong?</div>
+  <div class="a"><p>It would <em>work</em>, because lookup is instant, but you would allocate an array with a billion slots to hold 5,000 records. Almost all of it would be empty. This is called <dfn>direct addressing</dfn>. Hashing keeps the instant lookup but shrinks the array to a sensible size.</p></div>
+</div>
+
+<h3>The trick: a hash function</h3>
+<p>A <dfn>hash function</dfn> <code>h</code> takes a key and returns an index between 0 and <em>m</em>−1, where <em>m</em> is the size of the array (the number of <dfn>buckets</dfn>). The simplest example for integer keys is the <dfn>division method</dfn>:</p>
+<div class="formula">h(k) = k mod m</div>
+
+<figure class="diagram" data-interactive>
+<svg viewBox="0 0 720 300" role="img" aria-label="A key goes through a hash function to produce an index, which points to one cell of an array of seven cells">
+  <g class="hot" data-title="Key." data-info="The thing you want to store or find, such as a student ID or a username. It can be any size.">
+    <rect class="d-box" x="20" y="116" width="120" height="60" rx="12"/>
+    <text class="d-text d-bold" x="80" y="140" text-anchor="middle">Key</text>
+    <text class="d-small" x="80" y="160" text-anchor="middle">e.g. 31</text>
+  </g>
+  <path class="d-arrow" d="M140 146 H196"/>
+  <g class="hot" data-title="Hash function h(k)." data-info="A fast, deterministic rule that turns the key into an index. Here h(k) = k mod 7, so h(31) = 3.">
+    <rect class="d-box d3" x="200" y="106" width="170" height="80" rx="12"/>
+    <text class="d-text d-bold" x="285" y="136" text-anchor="middle">hash function</text>
+    <text class="d-text" x="285" y="162" text-anchor="middle">h(k) = k mod 7</text>
+  </g>
+  <path class="d-arrow" d="M370 146 H430"/>
+  <g class="hot" data-title="Index." data-info="The array position the key is sent to. The same key always gives the same index.">
+    <rect class="d-box d2" x="434" y="116" width="90" height="60" rx="12"/>
+    <text class="d-text d-bold" x="479" y="140" text-anchor="middle">index</text>
+    <text class="d-small" x="479" y="160" text-anchor="middle">3</text>
+  </g>
+  <path class="d-arrow" d="M524 146 H566"/>
+  <g class="hot" data-title="The bucket array." data-info="An ordinary array of m = 7 slots. Slot 3 holds our key (and its data). Reading slot 3 takes the same time however many items are stored.">
+    <rect class="d-box plain" x="570" y="20" width="130" height="36" />
+    <rect class="d-box plain" x="570" y="56" width="130" height="36" />
+    <rect class="d-box plain" x="570" y="92" width="130" height="36" />
+    <rect class="d-box" x="570" y="128" width="130" height="36" />
+    <rect class="d-box plain" x="570" y="164" width="130" height="36" />
+    <rect class="d-box plain" x="570" y="200" width="130" height="36" />
+    <rect class="d-box plain" x="570" y="236" width="130" height="36" />
+    <text class="d-small" x="560" y="38" text-anchor="end" dominant-baseline="central">0</text>
+    <text class="d-small" x="560" y="74" text-anchor="end" dominant-baseline="central">1</text>
+    <text class="d-small" x="560" y="110" text-anchor="end" dominant-baseline="central">2</text>
+    <text class="d-small" x="560" y="146" text-anchor="end" dominant-baseline="central">3</text>
+    <text class="d-small" x="560" y="182" text-anchor="end" dominant-baseline="central">4</text>
+    <text class="d-small" x="560" y="218" text-anchor="end" dominant-baseline="central">5</text>
+    <text class="d-small" x="560" y="254" text-anchor="end" dominant-baseline="central">6</text>
+    <text class="d-text d-bold" x="635" y="146" text-anchor="middle" dominant-baseline="central">31</text>
+  </g>
+</svg>
+<figcaption>The whole idea in one picture: key → hash function → index → bucket.</figcaption>
+</figure>
+
+<div class="callout example">
+  <span class="label">Real-life example</span>
+  <p>A coat check. You hand over your coat and get ticket <strong>#31</strong>. The attendant does not search the rack; the ticket number tells them <em>exactly</em> which hook to go to. The hash function is the rule that turns your coat (the key) into a hook number (the index).</p>
+</div>
+
+<h3>What makes a good hash function?</h3>
+<ul>
+  <li><strong>Deterministic:</strong> same key, same index, every time. Otherwise you cannot find what you stored.</li>
+  <li><strong>Fast:</strong> if computing <code>h(k)</code> is slow, you lose the benefit of indexing.</li>
+  <li><strong>Uniform:</strong> keys should spread evenly over the buckets, so no bucket gets crowded.</li>
+</ul>
+
+<div class="worked">
+  <div class="problem">Table size m = 7, h(k) = k mod 7. Where do the keys 10, 25, 31 and 44 go?</div>
+  <ol class="steps">
+    <li><b>10:</b> 10 = 1·7 + 3, so h(10) = 3. Store it in bucket 3.</li>
+    <li><b>25:</b> 25 = 3·7 + 4, so h(25) = 4. Bucket 4 is empty, so store it there.</li>
+    <li><b>31:</b> 31 = 4·7 + 3, so h(31) = 3. <em>Bucket 3 already holds 10!</em> This is a collision.</li>
+    <li><b>44:</b> 44 = 6·7 + 2, so h(44) = 2. Bucket 2 is empty, so store it there.</li>
+    <li><b>Takeaway:</b> four keys, but two of them wanted the same bucket. Even a small example collides, which is why topic 2 exists.</li>
+  </ol>
+</div>
+
+<div class="callout memory">
+  <span class="label">Memory trick</span>
+  <p><strong>“Same key, same slot.”</strong> Hashing is a chopping-and-mixing machine: put in the same ingredients and you always get the same dish, but different ingredients can sometimes give the same-looking dish (a collision).</p>
+</div>
+
+<div class="predict">
+  <div class="q">Your table has m = 7 buckets and you insert 8 keys. Can you guarantee there are no collisions? Why or why not?</div>
+  <div class="a"><p>No. With 8 keys and only 7 buckets, at least two keys <em>must</em> share a bucket (pigeonhole principle). Even with fewer keys than buckets, an unlucky hash function can still collide, as 10 and 31 did above.</p></div>
+</div>

@@ -1,0 +1,39 @@
+{
+  "title": "From keys to indexes: the idea of hashing",
+  "minutes": 12,
+  "why": "Everything else in this guide depends on one trick: converting a key into an array position. Start here.",
+  "needs": [],
+  "objectives": [
+    "Explain why searching a plain array or list is slow, and how an index fixes that",
+    "Describe what a hash function does and which properties it needs",
+    "Compute <code>h(k) = k mod m</code> by hand and spot a collision"
+  ],
+  "quiz": [
+    {"type": "mcq", "q": "Student IDs go up to 10<sup>9</sup>, but only 5,000 students are enrolled. Why is using the ID directly as an array index a bad idea?",
+     "options": ["The array would need about a billion slots, almost all of them empty", "Array indexes cannot be numbers that large", "IDs are not unique", "It makes lookup slower than a linked list"],
+     "answer": 0, "explain": "Direct addressing works, but the array must cover the whole <em>range</em> of possible keys, not just the keys you have. A billion slots to store 5,000 students wastes memory. Hashing squeezes the huge key range into a small array."},
+    {"type": "tf", "q": "A good hash function maps every distinct key to a distinct index.", "answer": false,
+     "explain": "False. When the key space is bigger than the array, the pigeonhole principle forces some keys to share an index. Those shared indexes are called collisions, and every hash table needs a plan for them (topic 2)."},
+    {"type": "mcq", "q": "Which property must a hash function have for lookup to work at all?",
+     "options": ["It returns the same index every time for the same key", "It returns a random index each call", "It returns indexes in sorted key order", "It never returns the same index twice"],
+     "answer": 0, "explain": "We store a key at <code>h(k)</code> and later search at <code>h(k)</code>. If the function gave a different answer the second time, we would look in the wrong place. Determinism is non-negotiable."},
+    {"type": "predict", "q": "Table size m = 7 and h(k) = k mod 7. Which pair of keys collides?",
+     "options": ["10 and 25", "10 and 31", "25 and 44", "31 and 44"],
+     "answer": 1, "explain": "10 mod 7 = 3 and 31 mod 7 = 3 (since 31 = 4·7 + 3). The others land on 3 &amp; 4, 4 &amp; 2, and 3 &amp; 2, so they do not collide."},
+    {"type": "multi", "q": "Select all properties that make a hash function <em>good</em>.",
+     "options": ["Fast to compute", "Spreads keys evenly over the indexes", "Deterministic", "Keeps the keys in sorted order"],
+     "answer": [0, 1, 2], "explain": "Fast, even spread and deterministic are what you want. Sorted order is not a goal; a hash table deliberately scatters keys, which is why it cannot give you “the next largest key” cheaply."}
+  ],
+  "task": {
+    "type": "fill", "title": "Hash it by hand",
+    "prompt": "<p>Fill in the blanks. Use <code>h(k) = k mod 7</code> for the calculation.</p>",
+    "text": "A hash function maps a [[key]] to an [[index|array index|bucket]] in an array of size m. Two different keys that map to the same index are called a [[collision]]. With h(k) = k mod 7, the key 52 goes to index [[3]]."
+  },
+  "cards": [
+    {"front": "What does a hash function do?", "back": "Maps a key (of any size) to an array index in 0 … m−1, deterministically."},
+    {"front": "Why is a plain unsorted array slow for lookup?", "back": "You must scan it element by element: O(n) in the worst case."},
+    {"front": "What is a collision?", "back": "Two different keys that the hash function maps to the same index."},
+    {"front": "Why are collisions unavoidable?", "back": "The set of possible keys is much larger than the array, so by the pigeonhole principle some keys must share an index."},
+    {"front": "Compute 31 mod 7 and say what it means as a hash.", "back": "31 = 4·7 + 3, so h(31) = 3. The key 31 is stored in slot 3."}
+  ]
+}

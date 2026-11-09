@@ -1,0 +1,21 @@
+<div class="cols">
+<h3>Core idea</h3>
+<p>Store key <em>k</em> at index <code>h(k)</code> of an array of size <em>m</em>. Average lookup, insert and delete are <b>O(1)</b>.</p>
+<h3>Hash function (division method)</h3>
+<p><code>h(k) = k mod m</code>. Needs to be deterministic, fast, uniform.</p>
+<h3>Collision</h3>
+<p>Two keys, one index. Unavoidable when keys outnumber slots.</p>
+<h3>Load factor</h3>
+<p><code>α = n / m</code>. Resize (double + rehash) when α passes the threshold.</p>
+<h3>Chaining vs probing</h3>
+<table>
+  <tr><th></th><th>Chaining</th><th>Linear probing</th></tr>
+  <tr><td>Collision</td><td>append to bucket list</td><td>try next slot</td></tr>
+  <tr><td>α &gt; 1?</td><td>yes</td><td>no</td></tr>
+  <tr><td>Weakness</td><td>list overhead</td><td>primary clustering</td></tr>
+</table>
+<h3>Costs</h3>
+<ul><li>Expected search, chaining: ≈ 1 + α/2</li><li>Worst case (all keys collide): O(n)</li><li>Resize: O(n), amortised O(1) per insert</li></ul>
+<h3>Remember</h3>
+<ul><li>Same key, same slot.</li><li>Rehash on resize, because <em>m</em> changed.</li><li>Delete in probing tables needs tombstones.</li></ul>
+</div>

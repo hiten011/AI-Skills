@@ -1,0 +1,92 @@
+<div class="callout idea">
+  <span class="label">Big idea</span>
+  <p>Collisions are not a bug, they are a certainty. A hash table works well when you (1) have a rule for sharing a slot and (2) keep the table from getting too crowded.</p>
+</div>
+
+<h3>Strategy 1: separate chaining</h3>
+<p>Let every bucket hold a small list. A key that hashes to bucket <em>i</em> goes onto bucket <em>i</em>'s list. To search, hash to the bucket, then scan that one short list.</p>
+
+<figure class="diagram" data-interactive>
+<svg viewBox="0 0 720 300" role="img" aria-label="Seven buckets; bucket 1 holds a chain of three keys 15, 22 and 36; bucket 3 holds 10; bucket 5 holds 5">
+  <g class="hot" data-title="The bucket array." data-info="m = 7 buckets, numbered 0 to 6. Most are empty or hold a single key.">
+    <rect class="d-box plain" x="40" y="20" width="56" height="36"/><rect class="d-box" x="40" y="60" width="56" height="36"/>
+    <rect class="d-box plain" x="40" y="100" width="56" height="36"/><rect class="d-box" x="40" y="140" width="56" height="36"/>
+    <rect class="d-box plain" x="40" y="180" width="56" height="36"/><rect class="d-box" x="40" y="220" width="56" height="36"/>
+    <rect class="d-box plain" x="40" y="260" width="56" height="36"/>
+    <text class="d-text" x="68" y="38" text-anchor="middle" dominant-baseline="central">0</text>
+    <text class="d-text" x="68" y="78" text-anchor="middle" dominant-baseline="central">1</text>
+    <text class="d-text" x="68" y="118" text-anchor="middle" dominant-baseline="central">2</text>
+    <text class="d-text" x="68" y="158" text-anchor="middle" dominant-baseline="central">3</text>
+    <text class="d-text" x="68" y="198" text-anchor="middle" dominant-baseline="central">4</text>
+    <text class="d-text" x="68" y="238" text-anchor="middle" dominant-baseline="central">5</text>
+    <text class="d-text" x="68" y="278" text-anchor="middle" dominant-baseline="central">6</text>
+  </g>
+  <g class="hot" data-title="Bucket 1: a chain of 3." data-info="15, 22 and 36 all satisfy k mod 7 = 1. They are stored as a linked chain. Searching for 36 means checking 15, then 22, then 36: three steps.">
+    <path class="d-arrow" d="M96 78 H140"/>
+    <rect class="d-box d4" x="144" y="60" width="64" height="36" rx="8"/><text class="d-text d-bold" x="176" y="78" text-anchor="middle" dominant-baseline="central">15</text>
+    <path class="d-arrow" d="M208 78 H252"/>
+    <rect class="d-box d4" x="256" y="60" width="64" height="36" rx="8"/><text class="d-text d-bold" x="288" y="78" text-anchor="middle" dominant-baseline="central">22</text>
+    <path class="d-arrow" d="M320 78 H364"/>
+    <rect class="d-box d4" x="368" y="60" width="64" height="36" rx="8"/><text class="d-text d-bold" x="400" y="78" text-anchor="middle" dominant-baseline="central">36</text>
+  </g>
+  <g class="hot" data-title="Buckets 3 and 5: one key each." data-info="10 mod 7 = 3 and 5 mod 7 = 5. No collision here, so the chain has length 1 and lookup is one step.">
+    <path class="d-arrow" d="M96 158 H140"/>
+    <rect class="d-box d2" x="144" y="140" width="64" height="36" rx="8"/><text class="d-text d-bold" x="176" y="158" text-anchor="middle" dominant-baseline="central">10</text>
+    <path class="d-arrow" d="M96 238 H140"/>
+    <rect class="d-box d2" x="144" y="220" width="64" height="36" rx="8"/><text class="d-text d-bold" x="176" y="238" text-anchor="middle" dominant-baseline="central">5</text>
+  </g>
+  <g class="hot" data-title="Load factor." data-info="n = 5 keys in m = 7 buckets gives α = 5/7 ≈ 0.71. It is the average chain length.">
+    <rect class="d-box d3" x="480" y="150" width="210" height="84" rx="12"/>
+    <text class="d-text d-bold" x="585" y="178" text-anchor="middle">load factor α = n / m</text>
+    <text class="d-text" x="585" y="204" text-anchor="middle">5 / 7 ≈ 0.71</text>
+    <text class="d-small" x="585" y="222" text-anchor="middle">average chain length</text>
+  </g>
+</svg>
+<figcaption>Separate chaining with h(k) = k mod 7. Click a part to see what it shows.</figcaption>
+</figure>
+
+<div class="callout example">
+  <span class="label">Real-life example</span>
+  <p>Mailboxes in an apartment building. Everyone whose surname starts with “S” shares one pigeonhole, and mail for that group is stacked in it. You go straight to the “S” hole, then flick through the few letters inside.</p>
+</div>
+
+<h3>Strategy 2: open addressing (linear probing)</h3>
+<p>Here every slot holds at most one key. If slot <code>h(k)</code> is taken, try the next slot, then the next (wrapping around), until you find a free one. Searching follows the same path.</p>
+
+<div class="worked">
+  <div class="problem">m = 7, h(k) = k mod 7, linear probing. Insert 10, 25, 31, 44, 17 in that order.</div>
+  <ol class="steps">
+    <li><b>10</b> → h = 3. Slot 3 is free. Place it. Table: slot 3 = 10.</li>
+    <li><b>25</b> → h = 4. Slot 4 is free. Place it. Slots 3, 4 = 10, 25.</li>
+    <li><b>31</b> → h = 3, taken by 10. Probe slot 4, taken by 25. Probe slot 5, free. Place it. Slots 3, 4, 5 = 10, 25, 31.</li>
+    <li><b>44</b> → h = 2. Slot 2 is free. Place it. Slots 2, 3, 4, 5 are now all occupied.</li>
+    <li><b>17</b> → h = 3, taken. Probe 4, 5 (taken), then slot 6, free. Place it. The occupied run is now slots 2 to 6.</li>
+    <li><b>Observe:</b> one long block of full slots has formed. Any key hashing anywhere inside it has to walk to the end. This is <dfn>primary clustering</dfn>.</li>
+  </ol>
+</div>
+
+<div class="predict">
+  <div class="q">In the table above, you search for key 24 (h = 3). It is not stored. How many slots do you check before you can say “not found”, and why does it take so long?</div>
+  <div class="a"><p>You check slots 3, 4, 5, 6, and then 0, which is empty. That is 5 probes, because the cluster forces you to walk all the way to the first empty slot. An empty slot is the signal that the key cannot be further along. Clusters make failed searches expensive.</p></div>
+</div>
+
+<h3>The load factor and resizing</h3>
+<p>The <dfn>load factor</dfn> is <code>α = n / m</code>. It is the single number that predicts speed:</p>
+<table>
+  <tr><th></th><th>Separate chaining</th><th>Linear probing</th></tr>
+  <tr><td>Can α exceed 1?</td><td>Yes</td><td>No (table would be full)</td></tr>
+  <tr><td>Where collisions go</td><td>Into the bucket's list</td><td>Into the next free slot</td></tr>
+  <tr><td>Typical resize threshold</td><td>α ≈ 1</td><td>α ≈ 0.5 to 0.7</td></tr>
+  <tr><td>Weakness</td><td>Extra memory for list nodes</td><td>Clustering as α grows</td></tr>
+</table>
+<p>When α passes the threshold, allocate a bigger array (often double) and <strong>rehash</strong> every key into it. You cannot just copy keys over: the index is <code>h(k) mod m</code>, and <em>m</em> has changed.</p>
+
+<div class="callout memory">
+  <span class="label">Memory trick</span>
+  <p><strong>Chaining = “pile up”, probing = “shuffle along”.</strong> And for the load factor, think of a restaurant: once it is more than about two-thirds full, finding a free table takes much longer.</p>
+</div>
+
+<div class="callout warn">
+  <span class="label">Watch out</span>
+  <p>Deleting from an open-addressing table is subtle: simply emptying a slot breaks the probe path of keys stored after it. Real implementations mark the slot with a “deleted” tombstone instead.</p>
+</div>

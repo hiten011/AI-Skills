@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: thermo-notes-quantitative
+expected_outcome: |
+  One interactive HTML study guide for the thermodynamics notes: a roadmap with the topics in dependency order
+  (systems/zeroth, first law, heat engines, second law and entropy, Carnot), explanations with inline diagrams,
+  worked examples with correct numbers (dU=300 J, dS=2 J/K, Carnot 40%, W=320 J, Qc=480 J), a quiz and practice task
+  for each topic, flashcards, a cheat sheet and a coverage checklist.
+context:
+  scaffold_script: place-files.sh

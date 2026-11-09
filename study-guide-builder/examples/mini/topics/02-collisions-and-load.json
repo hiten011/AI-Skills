@@ -1,0 +1,40 @@
+{
+  "title": "Collisions and the load factor",
+  "minutes": 18,
+  "why": "Now that you know two keys can land on the same slot, you need a strategy for that, plus a way to tell when the table is getting too full.",
+  "needs": ["t1"],
+  "objectives": [
+    "Insert and search using separate chaining and linear probing",
+    "Compute the load factor and explain how it affects speed",
+    "Explain why a growing table must be rehashed, not just copied"
+  ],
+  "quiz": [
+    {"type": "mcq", "q": "In separate chaining, what does each bucket store?",
+     "options": ["A list (chain) of every key that hashed to that bucket", "Only the first key that arrived", "The index of the next free bucket", "A sorted copy of the whole table"],
+     "answer": 0, "explain": "Each bucket holds a small list. Colliding keys simply join the list, so nothing is ever turned away. Lookup hashes to the bucket and then scans just that short chain."},
+    {"type": "tf", "q": "With separate chaining, the load factor α = n/m can be greater than 1.", "answer": true,
+     "explain": "True. Chains can hold any number of keys, so you can store more keys than buckets (α &gt; 1). Open addressing, by contrast, stores one key per slot, so there α can never exceed 1."},
+    {"type": "predict", "q": "Linear probing, m = 7. Slots 3, 4 and 5 are occupied. You insert a key with h(k) = 3. Which slot does it land in?",
+     "options": ["Slot 3", "Slot 4", "Slot 5", "Slot 6"],
+     "answer": 3, "explain": "Probe 3 (taken), then 4 (taken), then 5 (taken), then 6 (free). It lands in slot 6. Notice how the occupied run 3-4-5 grew to 3-4-5-6: this snowballing is called <em>primary clustering</em>."},
+    {"type": "multi", "q": "Which of these help keep hash table operations fast as the table fills? Select all that apply.",
+     "options": ["Resize to a bigger array and rehash the keys", "Keep the load factor under a chosen threshold", "Use a hash function that spreads keys evenly", "Never resize, to save time"],
+     "answer": [0, 1, 2], "explain": "Growing the table, capping the load factor and spreading keys evenly all keep chains and probe runs short. Never resizing makes the load factor climb forever, which pushes the cost from O(1) toward O(n)."},
+    {"type": "mcq", "q": "When a table grows from m = 7 to m = 14, why must every key be rehashed instead of copied to the same index?",
+     "options": ["The index is h(k) mod m, which changes when m changes", "Keys change value when copied", "Larger tables need a new hash function family", "Copying is not allowed in arrays"],
+     "answer": 0, "explain": "Where a key belongs depends on <em>m</em>. Key 25 sits at index 4 when m = 7, but with m = 14 it belongs at index 11 (25 mod 14 = 11). If you copied it without recomputing, a later lookup would hash to index 11, find nothing, and wrongly report “not found”."}
+  ],
+  "task": {
+    "type": "order", "title": "Insert into a chaining table",
+    "prompt": "<p>Drag (or use the arrows) to put the steps of <b>inserting a key into a chaining hash table</b> in the correct order.</p>",
+    "items": ["Compute the bucket index i = h(k) mod m", "Go to bucket i", "Walk down the chain looking for k", "If k is not there, append a new node holding k", "Increase n; if n/m passes the threshold, resize and rehash"]
+  },
+  "cards": [
+    {"front": "Separate chaining: how are collisions handled?", "back": "Each bucket holds a list; colliding keys are appended to that bucket's list."},
+    {"front": "Open addressing with linear probing: how are collisions handled?", "back": "If slot h(k) is taken, try h(k)+1, h(k)+2, … (mod m) until a free slot is found."},
+    {"front": "Define the load factor.", "back": "α = n / m: the number of stored keys divided by the number of buckets."},
+    {"front": "Expected cost of a successful search with chaining (uniform hashing)?", "back": "About 1 + α/2 steps. With α kept constant, that is O(1)."},
+    {"front": "What is primary clustering?", "back": "In linear probing, runs of occupied slots grow and merge, so new keys probe further and further."},
+    {"front": "Why rehash on resize?", "back": "A key's index depends on the table size m, so every key's index must be recomputed for the new m."}
+  ]
+}

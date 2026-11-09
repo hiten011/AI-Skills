@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: econ-notes-conceptual
+expected_outcome: |
+  One interactive HTML study guide for the microeconomics notes: topics in a sensible order (demand, supply, equilibrium,
+  shifts, price controls, elasticity, surplus), supply-and-demand graphs drawn as diagrams, correct numbers
+  (P*=20, Q*=60, new P*=25 Q*=80, shortage 30, surplus 30, |E|=0.5, CS=900, PS=450), a quiz and practice task per topic,
+  flashcards, a cheat sheet and a coverage checklist.
+context:
+  scaffold_script: place-files.sh
